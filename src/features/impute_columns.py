@@ -28,7 +28,7 @@ def impute_numeric_columns(dataset: Dataset) -> Dataset:
 
     num_cols = list(
         dataset.X_train.columns[
-            (dataset.X_train.dtypes == "float") | (dataset.X_train.dtypes == "bool")
+            (dataset.X_train.dtypes == "float") | (dataset.X_train.dtypes == "bool") | (dataset.X_train.dtypes == "int")
         ]
     )
     print("Imputing Training Set")
