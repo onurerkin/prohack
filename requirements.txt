@@ -12,3 +12,6 @@ tensorflow==2.1.0
 lightgbm
 setuptools>=41.0.0
 docutils>=0.10
+scipy
+xgboost==0.90
+cvxopt
