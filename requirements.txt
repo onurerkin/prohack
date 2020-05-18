@@ -12,3 +12,5 @@ tensorflow==2.1.0
 lightgbm
 setuptools>=41.0.0
 docutils>=0.10
+jupyter_contrib_nbextensions
+sklearn-pandas
