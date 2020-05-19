@@ -21,9 +21,10 @@ from src.features.label_encoder import MultiColumnLabelEncoder
 
 def preprocess_(standardize_or_not=False,impute_or_not=False):
 
+
     # Read the data
-    train = pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/train_column_names_fixed.csv')
-    X_test = pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/test_column_names_fixed.csv')
+    train = pd.read_csv('/Users/busebalci/Dev/prohack/data/processed/train_column_names_fixed.csv')
+    X_test = pd.read_csv('/Users/busebalci/Dev/prohack/data/processed/test_column_names_fixed.csv')
     X_test = X_test.drop(['galactic_year'], axis=1)
     # region cleaning
     y = train['y']
@@ -97,7 +98,8 @@ def preprocess_(standardize_or_not=False,impute_or_not=False):
     #                  'private_galaxy_capital_flows_percentage_of_ggp',
     #                  'gender_inequality_index_gii']
     #
-    # train = train.drop(na_50_percent, axis=1)
+    # train = train.drop(na_50_percent, axis=1)    
+
 
     # region Dataset Creation
     X_train, X_val, y_train, y_val = train_test_split(train, y, test_size=0.1, random_state=42)
@@ -112,9 +114,14 @@ def preprocess_(standardize_or_not=False,impute_or_not=False):
 
     # region impute
          ds = impute_numeric_columns(ds)
-    
+         ds.X_train.to_csv('/Users/busebalci/Dev/prohack/data/interim/df_imputed.csv')
     
     if standardize_or_not:
         ds = standardize(ds)
 
     return ds
+
+
+
+
+

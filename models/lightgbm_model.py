@@ -19,6 +19,11 @@ from src.features.label_encoder import MultiColumnLabelEncoder
 from sklearn.preprocessing import StandardScaler
 
 from src.features.preprocess import preprocess_
+from sklearn.metrics import mean_squared_error
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import SelectFromModel
+
 # endregion
 
 
@@ -26,13 +31,28 @@ from src.features.preprocess import preprocess_
 ds = preprocess_(standardize_or_not=False,impute_or_not=True)
 
 
-# cate_cols=['galaxy']
-# MultiColumnLabelEncoder(columns = cate_cols).fit(ds.X_train)
-# ds.X_train = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_train)
-# ds.X_val = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_val)
-# ds.X_test = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_test)
 
-#
+cate_cols=['galaxy']
+MultiColumnLabelEncoder(columns = cate_cols).fit(ds.X_train)
+ds.X_train = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_train)
+ds.X_val = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_val)
+ds.X_test = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_test)
+
+
+sel = RandomForestRegressor(random_state=42, n_estimators = 100, max_depth=30)
+sel.fit(ds.X_train, ds.y_train)
+sel.score(ds.X_val, ds.y_val)
+sel_feature=list(zip(list(ds.X_train.columns), sel.feature_importances_))
+
+rms = math.sqrt(mean_squared_error(ds.y_val, sel.predict(ds.X_val)))
+print(rms)
+
+# sel_feature=Feature_selection(ds)
+
+sel_feature = sorted(sel_feature, key=lambda x: x[1], reverse=True)
+
+sel_feature
+
 # column_names = list(ds.X_train.columns)
 # # Create X_train_std
 # scaler = StandardScaler()
@@ -42,8 +62,6 @@ ds = preprocess_(standardize_or_not=False,impute_or_not=True)
 # ds.X_train = pd.DataFrame(scaler.transform(ds.X_train),columns=column_names)
 # ds.X_val = pd.DataFrame(scaler.transform(ds.X_val),columns=column_names)
 # ds.X_test = pd.DataFrame(scaler.transform(ds.X_test),columns=column_names)
-
-
 
 nas = ds.X_train.columns[ds.X_train.isna().sum() / len(ds.X_train) > 0.1]
 
@@ -63,17 +81,16 @@ params['min_data'] = 50
 params['max_depth'] = 10
 
 model = lightgbm.train(params, d_train, num_boost_round=5000, valid_sets=d_val, valid_names=None, fobj=None, feval=None,
-                       init_model=None, feature_name='auto', categorical_feature=['galaxy'], early_stopping_rounds=20,
+                       init_model=None, feature_name='auto',  early_stopping_rounds=20,
                        evals_result=None, verbose_eval=True, learning_rates=None, keep_training_booster=False,
                        callbacks=None)
-
+#categorical_feature=['galaxy'],
 ds.X_train.columns
 
 y_pred = pd.DataFrame(model.predict(ds.X_test), columns=['y_pred'])
 X_test_pred = pd.concat([ds.X_test, y_pred], axis=1)
 
 #X_test_pred.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred.csv', index=False)
-#from sklearn.metrics import mean_squared_error
 
 #rms = math.sqrt(mean_squared_error(ds.y_test, y_pred))
 #print(rms)
