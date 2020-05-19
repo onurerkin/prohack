@@ -37,7 +37,10 @@ from tensorflow.keras import backend as K
 #Preprocess data
 ds = preprocess_(standardize_or_not=False,impute_or_not=True)
 
+selected_feat=Feature_selection(ds)
+
 cate_cols=['galaxy']
+
 MultiColumnLabelEncoder(columns = cate_cols).fit(ds.X_train)
 ds.X_train = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_train)
 ds.X_val = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_val)

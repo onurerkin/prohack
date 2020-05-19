@@ -1,5 +1,5 @@
 from sklearn.preprocessing import LabelEncoder
-
+import pandas as pd
 
 class MultiColumnLabelEncoder:
     """
@@ -32,3 +32,5 @@ class MultiColumnLabelEncoder:
 
     def fit_transform(self, X, y=None):
         return self.fit(X, y).transform(X)
+
+

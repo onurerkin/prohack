@@ -19,3 +19,4 @@ test.columns = test.columns.str.strip().str.lower().str.replace(' ', '_').str.re
 
 test.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/test_column_names_fixed.csv', index=False)
 
+
