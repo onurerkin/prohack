@@ -19,7 +19,7 @@ from src.features.label_encoder import MultiColumnLabelEncoder
 # endregion
 
 
-def preprocess_():
+def preprocess_(standardize_or_not=False,impute_or_not=False):
 
     # Read the data
     train = pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/train_column_names_fixed.csv')
@@ -108,12 +108,13 @@ def preprocess_():
 
 
 
-    # endregion
+    if impute_or_not:
 
     # region impute
-    # ds_imputed = impute_numeric_columns(ds)
-    # # endregion
-    #
-    # ds_standardized = standardize(ds_imputed)
+         ds = impute_numeric_columns(ds)
+    
+    
+    if standardize_or_not:
+        ds = standardize(ds)
 
     return ds

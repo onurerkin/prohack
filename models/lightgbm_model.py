@@ -20,7 +20,8 @@ from src.features.preprocess import preprocess_
 # endregion
 
 
-ds = preprocess_()
+
+ds = preprocess_(standardize_or_not=True,impute_or_not=True)
 
 
 nas = ds.X_train.columns[ds.X_train.isna().sum() / len(ds.X_train) > 0.1]
