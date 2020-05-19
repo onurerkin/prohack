@@ -28,19 +28,19 @@ def standardize(dataset: Dataset):
     # Create X_train_std
     X_train_np = np.array(X_train_numeric)
     scaler = StandardScaler()
-    X_train_std = pd.DataFrame(scaler.fit_transform(X_train_np), columns=column_names)
+    X_train_std = scaler.fit_transform(X_train_np)
     dataset.X_train[column_names] = X_train_std
 
     if dataset.X_val is not None:
         X_val_numeric = dataset.X_val[column_names]
         X_val_np = np.array(X_val_numeric)
-        X_val_std = pd.DataFrame(scaler.transform(X_val_np), columns=column_names)
+        X_val_std = scaler.transform(X_val_np)
         dataset.X_val[column_names] = X_val_std
 
     if dataset.X_test is not None:
         X_test_numeric = dataset.X_test[column_names]
         X_test_np = np.array(X_test_numeric)
-        X_test_std = pd.DataFrame(scaler.transform(X_test_np), columns=column_names)
+        X_test_std = scaler.transform(X_test_np)
         dataset.X_test[column_names] = X_test_std
 
     return dataset

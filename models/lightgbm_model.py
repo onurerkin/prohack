@@ -28,7 +28,7 @@ from sklearn.feature_selection import SelectFromModel
 
 
 
-ds = preprocess_(standardize_or_not=False,impute_or_not=True)
+ds = preprocess_(standardize_or_not=True,impute_or_not=True)
 
 
 
@@ -43,15 +43,15 @@ sel = RandomForestRegressor(random_state=42, n_estimators = 100, max_depth=30)
 sel.fit(ds.X_train, ds.y_train)
 sel.score(ds.X_val, ds.y_val)
 sel_feature=list(zip(list(ds.X_train.columns), sel.feature_importances_))
+sel_feature = sorted(sel_feature, key=lambda x: x[1], reverse=True)
 
 rms = math.sqrt(mean_squared_error(ds.y_val, sel.predict(ds.X_val)))
 print(rms)
-
-# sel_feature=Feature_selection(ds)
-
-sel_feature = sorted(sel_feature, key=lambda x: x[1], reverse=True)
-
-sel_feature
+#
+#
+# sel_feature = sorted(sel_feature, key=lambda x: x[1], reverse=True)
+#
+# sel_feature
 
 # column_names = list(ds.X_train.columns)
 # # Create X_train_std
@@ -63,7 +63,7 @@ sel_feature
 # ds.X_val = pd.DataFrame(scaler.transform(ds.X_val),columns=column_names)
 # ds.X_test = pd.DataFrame(scaler.transform(ds.X_test),columns=column_names)
 
-nas = ds.X_train.columns[ds.X_train.isna().sum() / len(ds.X_train) > 0.1]
+# nas = ds.X_train.columns[ds.X_train.isna().sum() / len(ds.X_train) > 0.1]
 
 
 # region lightgbm

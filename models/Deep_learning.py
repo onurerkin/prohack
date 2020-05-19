@@ -35,9 +35,8 @@ from tensorflow.keras import backend as K
 
 
 #Preprocess data
-ds = preprocess_(standardize_or_not=False,impute_or_not=True)
+ds = preprocess_(standardize_or_not=True,impute_or_not=True)
 
-selected_feat=Feature_selection(ds)
 
 cate_cols=['galaxy']
 
@@ -47,18 +46,7 @@ ds.X_val = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_val)
 ds.X_test = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_test)
 
 
-column_names = list(ds.X_train.columns)
-# Create X_train_std
-scaler = StandardScaler()
-ds.full_dataset = ds.X_train.reset_index(drop=True).append(ds.X_val).reset_index(drop=True).append(ds.X_test).reset_index(drop=True)
-full_dataset = ds.full_dataset
-scaler = scaler.fit(full_dataset)
-ds.X_train = scaler.transform(ds.X_train)
-ds.X_val = scaler.transform(ds.X_val)
-ds.X_test = scaler.transform(ds.X_test)
 
-
-X_train = ds.X_train
 
 def modified_sigmoid(x): 
   return tf.nn.sigmoid(x) * 0.7
@@ -102,7 +90,7 @@ for num_nodes in range(10,1000,20):
     print("Number of Nodes: %.4f" % num_nodes)
 
 
-
+output_bias = tf.keras.initializers.Constant(ds.y_train.mean())
 
 ####
 
@@ -111,7 +99,11 @@ model.add(Dense(200, activation='relu', input_shape=(ds.X_train.shape[1],)))
 # model.add(Dropout(0.2))
 model.add(Dense(100, activation='relu'))
 # model.add(Dropout(0.2))
-model.add(Dense(1, activation='sigmoid'))
+
+model.add(Dense(50, activation='relu'))
+# model.add(Dropout(0.2))
+
+model.add(Dense(1, activation=modified_sigmoid, bias_initializer=output_bias))
 
 model.summary()
 
@@ -124,14 +116,17 @@ model.summary()
 # lr_finder.plot_loss(n_skip_beginning=1, n_skip_end=1)
 
 # Compile model
-model.compile(loss='mse', optimizer=Adam(lr=1e-3), metrics=['mse',rmse])
+model.compile(loss='mse', optimizer=Adam(lr=1e-4), metrics=['mse',rmse])
 
 callbacks = []
 history = model.fit(np.array(ds.X_train).astype(np.float32), np.array(ds.y_train).astype(np.float32),
                     validation_data=(np.array(ds.X_val).astype(np.float32), np.array(ds.y_val).astype(np.float32)),
-                    batch_size=128, epochs=30, callbacks=callbacks, verbose=1)
+                    batch_size=32, epochs=100, callbacks=callbacks, verbose=1)
 
 mse = model.evaluate(np.array(ds.X_val).astype(np.float32), np.array(ds.y_val).astype(np.float32))
 y_pred_val = model.predict(np.array(ds.X_val).astype(np.float32))
 
 print("MSE: %.4f" % mse)
+
+
+ds.y_train.mean()
