@@ -16,12 +16,33 @@ from src.features.impute_columns import (impute_categorical_columns,impute_numer
 from src.contracts.Dataset import Dataset
 from src.features.standardize import standardize
 from src.features.label_encoder import MultiColumnLabelEncoder
+from sklearn.preprocessing import StandardScaler
+
 from src.features.preprocess import preprocess_
 # endregion
 
 
 
 ds = preprocess_(standardize_or_not=False,impute_or_not=True)
+
+
+# cate_cols=['galaxy']
+# MultiColumnLabelEncoder(columns = cate_cols).fit(ds.X_train)
+# ds.X_train = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_train)
+# ds.X_val = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_val)
+# ds.X_test = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_test)
+
+#
+# column_names = list(ds.X_train.columns)
+# # Create X_train_std
+# scaler = StandardScaler()
+# ds.full_dataset = ds.X_train.reset_index(drop=True).append(ds.X_val).reset_index(drop=True).append(ds.X_test).reset_index(drop=True)
+# full_dataset = ds.full_dataset
+# scaler = scaler.fit(full_dataset)
+# ds.X_train = pd.DataFrame(scaler.transform(ds.X_train),columns=column_names)
+# ds.X_val = pd.DataFrame(scaler.transform(ds.X_val),columns=column_names)
+# ds.X_test = pd.DataFrame(scaler.transform(ds.X_test),columns=column_names)
+
 
 
 nas = ds.X_train.columns[ds.X_train.isna().sum() / len(ds.X_train) > 0.1]

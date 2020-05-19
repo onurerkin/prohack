@@ -29,7 +29,9 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
-from keras_lr_finder import LRFinder
+# from keras_lr_finder import LRFinder
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras import backend as K
 
 
 #Preprocess data
@@ -42,9 +44,25 @@ ds.X_val = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_val)
 ds.X_test = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_test)
 
 
+column_names = list(ds.X_train.columns)
+# Create X_train_std
+scaler = StandardScaler()
+ds.full_dataset = ds.X_train.reset_index(drop=True).append(ds.X_val).reset_index(drop=True).append(ds.X_test).reset_index(drop=True)
+full_dataset = ds.full_dataset
+scaler = scaler.fit(full_dataset)
+ds.X_train = scaler.transform(ds.X_train)
+ds.X_val = scaler.transform(ds.X_val)
+ds.X_test = scaler.transform(ds.X_test)
+
+
+X_train = ds.X_train
 
 def modified_sigmoid(x): 
   return tf.nn.sigmoid(x) * 0.7
+
+
+def rmse(y_true, y_pred):
+    return K.sqrt(K.mean(K.square(y_true - y_pred),axis=-1))
 
 
 for num_nodes in range(10,1000,20):
@@ -70,7 +88,7 @@ for num_nodes in range(10,1000,20):
     
     
     #Compile model
-    model.compile(loss='mse', optimizer=Adam(lr=1e-5))
+    model.compile(loss='mse', optimizer=Adam(lr=1e-5), metrics=['mse',rmse])
     
     
     callbacks = []
@@ -81,3 +99,36 @@ for num_nodes in range(10,1000,20):
     print("Number of Nodes: %.4f" % num_nodes)
 
 
+
+
+####
+
+model = Sequential()
+model.add(Dense(200, activation='relu', input_shape=(ds.X_train.shape[1],)))
+# model.add(Dropout(0.2))
+model.add(Dense(100, activation='relu'))
+# model.add(Dropout(0.2))
+model.add(Dense(1, activation='sigmoid'))
+
+model.summary()
+
+# kernel_regularizer=l2(0.1),bias_regularizer=l2(0.1)
+
+# Learning Rate Finder
+
+# lr_finder = LRFinder(model)
+# lr_finder.find(ds.X_train, ds.y_train, start_lr=0.0001, end_lr=100, batch_size=32, epochs=5)
+# lr_finder.plot_loss(n_skip_beginning=1, n_skip_end=1)
+
+# Compile model
+model.compile(loss='mse', optimizer=Adam(lr=1e-3), metrics=['mse',rmse])
+
+callbacks = []
+history = model.fit(np.array(ds.X_train).astype(np.float32), np.array(ds.y_train).astype(np.float32),
+                    validation_data=(np.array(ds.X_val).astype(np.float32), np.array(ds.y_val).astype(np.float32)),
+                    batch_size=128, epochs=30, callbacks=callbacks, verbose=1)
+
+mse = model.evaluate(np.array(ds.X_val).astype(np.float32), np.array(ds.y_val).astype(np.float32))
+y_pred_val = model.predict(np.array(ds.X_val).astype(np.float32))
+
+print("MSE: %.4f" % mse)

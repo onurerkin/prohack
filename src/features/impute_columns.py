@@ -34,7 +34,7 @@ def impute_numeric_columns(dataset: Dataset) -> Dataset:
     print("Imputing Training Set")
 
     imputer = IterativeImputer(
-        n_nearest_features=5, skip_complete=True, random_state=42
+        n_nearest_features=10, skip_complete=True, random_state=42
     )
 
     imputed_train_cols = imputer.fit_transform(dataset.X_train.loc[:, num_cols])
