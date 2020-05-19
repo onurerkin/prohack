@@ -20,7 +20,8 @@ from src.features.preprocess import preprocess_
 # endregion
 
 
-ds = preprocess_()
+
+ds = preprocess_(standardize_or_not=False,impute_or_not=True)
 
 
 nas = ds.X_train.columns[ds.X_train.isna().sum() / len(ds.X_train) > 0.1]
@@ -50,11 +51,11 @@ ds.X_train.columns
 y_pred = pd.DataFrame(model.predict(ds.X_test), columns=['y_pred'])
 X_test_pred = pd.concat([ds.X_test, y_pred], axis=1)
 
-X_test_pred.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred.csv', index=False)
-from sklearn.metrics import mean_squared_error
+#X_test_pred.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred.csv', index=False)
+#from sklearn.metrics import mean_squared_error
 
-rms = math.sqrt(mean_squared_error(ds.y_test, y_pred))
-print(rms)
+#rms = math.sqrt(mean_squared_error(ds.y_test, y_pred))
+#print(rms)
 
 
 
