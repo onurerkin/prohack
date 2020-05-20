@@ -25,10 +25,11 @@ def preprocess_(standardize_or_not=False,impute_or_not=False):
     # Read the data
     train = pd.read_csv('data/processed/train_column_names_fixed.csv')
     X_test = pd.read_csv('data/processed/test_column_names_fixed.csv')
-    X_test = X_test.drop(['galactic_year'], axis=1)
+    # X_test = X_test.drop(['galactic_year'], axis=1)
     # region cleaning
     y = train['y']
-    train = train.drop(['y', 'galactic_year'], axis=1)
+    # train = train.drop(['galactic_year', 'y'], axis=1)
+    train = train.drop(['y'], axis=1)
     train['galaxy'] = train['galaxy'].astype('category')
     X_test['galaxy'] = X_test['galaxy'].astype('category')
     # endregion
@@ -41,7 +42,7 @@ def preprocess_(standardize_or_not=False,impute_or_not=False):
 
 
     # region Dataset Creation
-    X_train, X_val, y_train, y_val = train_test_split(train, y, test_size=0.1, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(train, y, test_size=0.1, random_state=43)
     # X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=42)
 
     # Create Dataset
