@@ -23,8 +23,8 @@ def preprocess_(standardize_or_not=False,impute_or_not=False):
 
 
     # Read the data
-    train = pd.read_csv('data/processed/train_column_names_fixed.csv')
-    X_test = pd.read_csv('data/processed/test_column_names_fixed.csv')
+    train = pd.read_csv('/Users/busebalci/Dev/prohack/data/processed/train_column_names_fixed.csv')
+    X_test = pd.read_csv('/Users/busebalci/Dev/prohack/data/processed/test_column_names_fixed.csv')
     # X_test = X_test.drop(['galactic_year'], axis=1)
     # region cleaning
     y = train['y']
