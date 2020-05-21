@@ -21,18 +21,15 @@ from src.features.label_encoder import MultiColumnLabelEncoder
 # endregion
 
 
-def create_features(full_ds,column_name):
+def create_features(full_ds, column_name):
     full_ds = full_ds.join(full_ds.groupby('galaxy')[column_name].mean(), on='galaxy',
                            rsuffix='_galaxy_mean')
     full_ds = full_ds.join(full_ds.groupby('galaxy')[column_name].max(), on='galaxy',
                            rsuffix='_galaxy_max')
     full_ds = full_ds.join(full_ds.groupby('galaxy')[column_name].min(), on='galaxy',
                            rsuffix='_galaxy_min')
+
+    full_ds[column_name + '_lag'] = full_ds.groupby(['galaxy'])[column_name].shift(1)
+    full_ds[column_name + '_lag_2'] = full_ds.groupby(['galaxy'])[column_name].shift(2)
+
     return full_ds
-
-
-
-
-
-
-
