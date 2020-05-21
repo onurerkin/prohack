@@ -110,7 +110,7 @@ x = hf.columns
 y = 'y'
 x.remove(y)
 
-run_secs = 3600
+run_secs = 500
 
 models_path = '/Users/onurerkinsucu/Dev/prohack/models/h2o_models'
 aml = H2OAutoML(max_runtime_secs=run_secs, stopping_metric='RMSE', sort_metric='RMSE', seed=1,
