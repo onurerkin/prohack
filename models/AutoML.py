@@ -22,7 +22,7 @@ from sklearn.preprocessing import StandardScaler
 from src.features.feature_selection import Feature_selection
 from src.features.preprocess import preprocess_
 from src.features.create_features import create_features
-
+from src.features.preprocess_full_ds import preprocess_full_ds
 from sklearn.metrics import mean_squared_error
 
 from sklearn.ensemble import RandomForestRegressor
@@ -33,137 +33,36 @@ from h2o.automl import H2OAutoML
 
 
 
+
 # endregion
 
-
-ds = preprocess_(standardize_or_not=True, impute_or_not=True)
-
-ds.X_train['is_train'] = 1
-ds.X_val['is_train'] = 1
-ds.X_test['is_train'] = 0
+ds = preprocess_full_ds(standardize_or_not=True, impute_or_not=True)
+full_ds = ds.full_dataset
 
 
-full_ds = ds.X_train.append(ds.X_val).reset_index(drop=True).append(ds.X_test).reset_index(drop=True)
+X_train = full_ds[full_ds['is_train'] > 0]
+X_test = full_ds[full_ds['is_train'] < 0]
+X_test = X_test.sort_values(by=['original_index'])
 
+X_train = X_train.drop(['is_train','original_index'], axis=1)
+X_test = X_test.drop(['is_train','original_index','y'], axis=1)
 
-# important_cols =['intergalactic_development_index_idi_male_rank',
-#  'intergalactic_development_index_idi_rank',
-#  'gender_inequality_index_gii',
-#  'intergalactic_development_index_idi_male',
-#  'intergalactic_development_index_idi_female',
-#  'old_age_dependency_ratio_old_age_65_and_older_per_100_creatures_ages_15-64',
-#  'estimated_gross_galactic_income_per_capita_male',
-#  'intergalactic_development_index_idi_female_rank',
-#  'intergalactic_development_index_idi',
-#  'life_expectancy_at_birth_male_galactic_years',
-#  'life_expectancy_at_birth_female_galactic_years',
-#  'expected_years_of_education_male_galactic_years',
-#  'domestic_credit_provided_by_financial_sector_percentage_of_ggp'
-#                  ]
-#
-#
-# for col in important_cols:
-#     full_ds = create_features(full_ds, col)
-
-full_ds = create_features(full_ds,'gender_inequality_index_gii')
-full_ds = create_features(full_ds,'intergalactic_development_index_idi_male_rank')
-full_ds = create_features(full_ds,'intergalactic_development_index_idi_rank')
-full_ds = create_features(full_ds,'intergalactic_development_index_idi_female_rank')
-full_ds = create_features(full_ds,'old_age_dependency_ratio_old_age_65_and_older_per_100_creatures_ages_15-64')
-full_ds = create_features(full_ds,'estimated_gross_galactic_income_per_capita_male')
-full_ds = create_features(full_ds,'estimated_gross_galactic_income_per_capita_female')
-# full_ds = create_features(full_ds,'domestic_credit_provided_by_financial_sector_percentage_of_ggp')
-
-
-# full_ds['intergalactic_development_index_idi_rank'] = np.log(full_ds['intergalactic_development_index_idi_rank']+2)
-# full_ds['intergalactic_development_index_idi_male_rank'] = np.log(full_ds['intergalactic_development_index_idi_male_rank']+2)
-# full_ds['estimated_gross_galactic_income_per_capita_male'] = np.log(full_ds['estimated_gross_galactic_income_per_capita_male']+2)
-# full_ds['estimated_gross_galactic_income_per_capita_female'] = np.log(full_ds['estimated_gross_galactic_income_per_capita_female']+2)
-
-print(sum(full_ds.isna().sum()))
-
-# full_ds = full_ds.join(full_ds.groupby('galaxy')['gender_inequality_index_gii'].mean(), on='galaxy', rsuffix='_galaxy_mean')
-# full_ds = full_ds.join(full_ds.groupby('galaxy')['gender_inequality_index_gii'].max(), on='galaxy', rsuffix='_galaxy_max')
-# full_ds = full_ds.join(full_ds.groupby('galaxy')['gender_inequality_index_gii'].min(), on='galaxy', rsuffix='_galaxy_min')
-#
-#
-# full_ds =full_ds.join(full_ds.groupby('galaxy')['intergalactic_development_index_idi_male_rank'].mean(), on='galaxy',
-#              rsuffix='_galaxy_mean')
-# full_ds =full_ds.join(full_ds.groupby('galaxy')['intergalactic_development_index_idi_rank'].mean(), on='galaxy',
-#              rsuffix='_galaxy_mean')
-# full_ds =full_ds.join(full_ds.groupby('galaxy')['intergalactic_development_index_idi_female_rank'].mean(), on='galaxy',
-#              rsuffix='_galaxy_mean')
-# full_ds =full_ds.join(
-#     full_ds.groupby('galaxy')['old_age_dependency_ratio_old_age_65_and_older_per_100_creatures_ages_15-64'].mean(),
-#     on='galaxy', rsuffix='_galaxy_mean')
-#
-#
-# full_ds =full_ds.join(
-#     full_ds.groupby('galaxy')['estimated_gross_galactic_income_per_capita_male'].mean(),
-#     on='galaxy', rsuffix='_galaxy_mean')
-#
-# full_ds =full_ds.join(
-#     full_ds.groupby('galaxy')['estimated_gross_galactic_income_per_capita_female'].mean(),
-#     on='galaxy', rsuffix='_galaxy_mean')
-
-
-
-full_ds['galaxy'] = full_ds['galaxy'].astype('category')
-
-X_train = full_ds[full_ds['is_train'] == 1]
-X_test = full_ds[full_ds['is_train'] == 0]
-
-X_train = X_train.drop('is_train', axis=1)
-X_test = X_test.drop('is_train', axis=1)
-
-y_train = ds.y_train.append(ds.y_val).reset_index(drop=True)
-
-# X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=43)
-
-
-
-ds.X_train = X_train
-ds.y_train = y_train
-# ds.X_val = X_val
-# ds.y_val = y_val
-ds.X_test = X_test
-
-cate_cols = ['galaxy']
-
-#
-# ds.X_train = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_train)
-# ds.X_val = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_val)
-# ds.X_test = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_test)
-# selected_features=Feature_selection(ds)
-
-
-
-
-
-
-# ds.X_train = ds.X_train[selected_features]
-# ds.X_val = ds.X_val[selected_features]
-# ds.X_test = ds.X_test[selected_features]
-
-# MultiColumnLabelEncoder(columns = cate_cols).fit(ds.X_train)
-# ds.X_train = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_train)
-# ds.X_val = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_val)
-# ds.X_test = MultiColumnLabelEncoder(columns = cate_cols).transform(ds.X_test)
 
 
 h2o.init()
 
-X_train['y']=y_train
 hf = h2o.H2OFrame(X_train)
-hf_test=h2o.H2OFrame(ds.X_test)
+hf_test=h2o.H2OFrame(X_test)
 
 x = hf.columns
 y = 'y'
 x.remove(y)
 
-
-aml = H2OAutoML(max_runtime_secs=1000 , seed=1)
+models_path = '/Users/onurerkinsucu/Dev/prohack/models/h2o_models'
+aml = H2OAutoML(max_runtime_secs=1000,stopping_metric='RMSE',sort_metric='RMSE', seed=1,export_checkpoints_dir=models_path)
 aml.train(x=x, y=y, training_frame=hf)
+
+
 
 # View the AutoML Leaderboard
 lb = aml.leaderboard
@@ -186,11 +85,14 @@ preds = h2o.as_list(preds)
 
 lb = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
 
-preds=preds.rename(columns={'predict':'y_pred'})
-X_test_pred = pd.concat([ds.X_test.reset_index(drop=True), preds], axis=1)
+saved_model = h2o.load_model('/Users/onurerkinsucu/Dev/prohack/models/h2o_models/StackedEnsemble_AllModels_AutoML_20200520_194525')
+#
+# preds=preds.rename(columns={'predict':'y_pred'})
+# X_test_pred = pd.concat([ds.X_test.reset_index(drop=True), preds], axis=1)
+#
+# X_test_pred.to_csv('data/processed/X_test_pred_h2o_20_may.csv', index=False)
 
-X_test_pred.to_csv('/Users/busebalci/Dev/prohack/data/processed/X_test_pred_h2o_20_may.csv', index=False)
-
+pred_2 = h2o.as_list(saved_model.predict(hf_test))
 
 
 
