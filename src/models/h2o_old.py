@@ -1,0 +1,138 @@
+# -*- coding: utf-8 -*-
+
+# region imports
+import math
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import norm
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_log_error
+from sklearn import preprocessing
+from sklearn.model_selection import cross_val_score, cross_val_predict
+import lightgbm
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+from src.features.impute_columns import (impute_categorical_columns, impute_numeric_columns)
+from src.contracts.Dataset import Dataset
+from src.features.standardize import standardize
+from src.features.label_encoder import MultiColumnLabelEncoder
+from sklearn.preprocessing import StandardScaler
+from src.features.feature_selection import Feature_selection
+from src.features.preprocess import preprocess_
+from src.features.create_features import create_features
+from src.features.preprocess_full_ds import preprocess_full_ds
+from sklearn.metrics import mean_squared_error
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import SelectFromModel
+import h2o
+from h2o.automl import H2OAutoML
+
+
+
+
+
+# endregion
+
+ds = preprocess_(standardize_or_not=True, impute_or_not=True)
+
+
+ds.X_train['is_train'] = 1
+ds.X_val['is_train'] = 1
+ds.X_test['is_train'] = 0
+
+
+full_ds = ds.X_train.append(ds.X_val).reset_index(drop=True).append(ds.X_test).reset_index(drop=True)
+
+full_ds = create_features(full_ds,'gender_inequality_index_gii')
+full_ds = create_features(full_ds,'intergalactic_development_index_idi_male_rank')
+full_ds = create_features(full_ds,'intergalactic_development_index_idi_rank')
+full_ds = create_features(full_ds,'intergalactic_development_index_idi_female_rank')
+full_ds = create_features(full_ds,'old_age_dependency_ratio_old_age_65_and_older_per_100_creatures_ages_15-64')
+full_ds = create_features(full_ds,'estimated_gross_galactic_income_per_capita_male')
+full_ds = create_features(full_ds,'estimated_gross_galactic_income_per_capita_female')
+# full_ds = create_features(full_ds,'domestic_credit_provided_by_financial_sector_percentage_of_ggp')
+
+
+# full_ds['intergalactic_development_index_idi_rank'] = np.log(full_ds['intergalactic_development_index_idi_rank']+2)
+# full_ds['intergalactic_development_index_idi_male_rank'] = np.log(full_ds['intergalactic_development_index_idi_male_rank']+2)
+# full_ds['estimated_gross_galactic_income_per_capita_male'] = np.log(full_ds['estimated_gross_galactic_income_per_capita_male']+2)
+# full_ds['estimated_gross_galactic_income_per_capita_female'] = np.log(full_ds['estimated_gross_galactic_income_per_capita_female']+2)
+
+print(sum(full_ds.isna().sum()))
+
+
+
+full_ds['galaxy'] = full_ds['galaxy'].astype('category')
+
+X_train = full_ds[full_ds['is_train'] == 1]
+X_test = full_ds[full_ds['is_train'] == 0]
+
+X_train = X_train.drop('is_train', axis=1)
+X_test = X_test.drop('is_train', axis=1)
+
+y_train = ds.y_train.append(ds.y_val).reset_index(drop=True)
+
+# X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=43)
+
+
+
+ds.X_train = X_train
+ds.y_train = y_train
+# ds.X_val = X_val
+# ds.y_val = y_val
+ds.X_test = X_test
+
+cate_cols = ['galaxy']
+
+
+
+h2o.init()
+
+X_train['y']=y_train
+hf = h2o.H2OFrame(X_train)
+hf_test=h2o.H2OFrame(ds.X_test)
+
+x = hf.columns
+y = 'y'
+x.remove(y)
+
+models_path = '/Users/onurerkinsucu/Dev/prohack/models/h2o_models'
+aml = H2OAutoML(max_runtime_secs=1000,stopping_metric='RMSE',sort_metric='RMSE', seed=1,export_checkpoints_dir=models_path)
+aml.train(x=x, y=y, training_frame=hf)
+
+# View the AutoML Leaderboard
+lb = aml.leaderboard
+lb.head(rows=lb.nrows)
+
+
+preds = aml.predict(hf_test)
+
+preds = aml.leader.predict(hf_test)
+preds = h2o.as_list(preds)
+
+#X_test_pred = pd.concat([ds.X_test.reset_index(drop=True), y_pred], axis=1)
+
+#X_test_pred.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred_19_may.csv', index=False)
+
+# rms = math.sqrt(mean_squared_error(ds.y_test, y_pred))
+# print(rms)
+
+# endregion
+
+lb = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
+
+saved_model = h2o.load_model('/Users/onurerkinsucu/Dev/prohack/models/h2o_models/StackedEnsemble_AllModels_AutoML_20200520_194525')
+#
+# preds=preds.rename(columns={'predict':'y_pred'})
+# X_test_pred = pd.concat([ds.X_test.reset_index(drop=True), preds], axis=1)
+#
+# X_test_pred.to_csv('data/processed/X_test_pred_h2o_20_may.csv', index=False)
+
+pred_2 = h2o.as_list(saved_model.predict(hf_test))
+
+
+
+
