@@ -2,13 +2,13 @@ import pandas as pd
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn_pandas import CategoricalImputer
-
+import numpy as np
 from src.contracts.Dataset import Dataset
 
 enable_iterative_imputer
 
 
-def impute_numeric_columns(dataset: Dataset) -> Dataset:
+def impute_numeric_columns(dataset: Dataset, missing_flag = True) -> Dataset:
     """
     Imputes numerical columns for train, validation, and test sets.
     It uses IterativeImputer and it fit_transform the train set but
@@ -28,7 +28,7 @@ def impute_numeric_columns(dataset: Dataset) -> Dataset:
 
     num_cols = list(
         dataset.X_train.columns[
-            (dataset.X_train.dtypes == "float") | (dataset.X_train.dtypes == "bool") | (dataset.X_train.dtypes == "int")
+            (dataset.X_train.dtypes == "float") | (dataset.X_train.dtypes == "bool") | (dataset.X_train.dtypes == "int") | (dataset.X_train.dtypes == np.float32)
         ]
     )
     print("Imputing Training Set")
@@ -46,12 +46,12 @@ def impute_numeric_columns(dataset: Dataset) -> Dataset:
     )
     X_train_imputed = dataset.X_train.copy()
     X_train_imputed.loc[train_inds, num_cols] = df_imputed_train_cols
+    if missing_flag:
+        nas = dataset.X_train[num_cols].isna().sum()
+        nas = list(nas[nas != 0].index)
 
-    nas = dataset.X_train[num_cols].isna().sum()
-    nas = list(nas[nas != 0].index)
-
-    for col in nas:
-        X_train_imputed[col + "_isna"] = dataset.X_train[col].isna()
+        for col in nas:
+            X_train_imputed[col + "_isna"] = dataset.X_train[col].isna()
 
     if dataset.X_val is not None:
         # Impute val
@@ -63,9 +63,9 @@ def impute_numeric_columns(dataset: Dataset) -> Dataset:
         )
         X_val_imputed = dataset.X_val.copy()
         X_val_imputed.loc[val_inds, num_cols] = df_imputed_val_cols
-
-        for col in nas:
-            X_val_imputed[col + "_isna"] = dataset.X_val[col].isna()
+        if missing_flag:
+            for col in nas:
+                X_val_imputed[col + "_isna"] = dataset.X_val[col].isna()
 
         dataset.X_val = X_val_imputed
 
@@ -79,9 +79,9 @@ def impute_numeric_columns(dataset: Dataset) -> Dataset:
         )
         X_test_imputed = dataset.X_test.copy()
         X_test_imputed.loc[test_inds, num_cols] = df_imputed_test_cols
-
-        for col in nas:
-            X_test_imputed[col + "_isna"] = dataset.X_test[col].isna()
+        if missing_flag:
+            for col in nas:
+                X_test_imputed[col + "_isna"] = dataset.X_test[col].isna()
 
         dataset.X_test = X_test_imputed
 
