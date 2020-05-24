@@ -222,8 +222,8 @@ ds.X_val = ds.X_val.astype(np.float32)
 ds.X_test = ds.X_test.astype(np.float32)
 
 
-model = train(X_train=ds.X_train, y_train=np.array(ds.y_train), X_val=ds.X_val, y_val=np.array(ds.y_val), layers=[16, 32,16], num_classes=1,
-              cate_cols=cate_cols,learning_rate=1e-4, epochs=1000,batch_size=32,dropout_rate=0.1)
+model = train(X_train=ds.X_train, y_train=np.array(ds.y_train), X_val=ds.X_val, y_val=np.array(ds.y_val), layers=[16, 32, 16], num_classes=1,
+              cate_cols=cate_cols,learning_rate=1e-4, epochs=100,batch_size=32,dropout_rate=0.25)
 
 history = model[0]
 model = model[1]

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from bdcML.deeplearning.dnn import (
+from src.models.dnn_funcs import (
     _compile_model,
     _create_keras_model,
     _fit_model,
