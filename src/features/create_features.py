@@ -29,10 +29,19 @@ def create_features(full_ds, column_name):
     full_ds = full_ds.join(full_ds.groupby('galaxy')[column_name].min(), on='galaxy',
                            rsuffix='_galaxy_min')
 
+
+    # full_ds = full_ds.join(full_ds.groupby('galactic_year')[column_name].mean(), on='galactic_year',
+    #                        rsuffix='_galactic_year_mean')
+    # full_ds = full_ds.join(full_ds.groupby('galactic_year')[column_name].max(), on='galactic_year',
+    #                        rsuffix='_galactic_year_max')
+    # full_ds = full_ds.join(full_ds.groupby('galactic_year')[column_name].min(), on='galactic_year',
+    #                        rsuffix='_galactic_year_min')
+
     full_ds[column_name + '_lag'] = full_ds.groupby(['galaxy'])[column_name].shift(1)
     full_ds[column_name + '_lag_2'] = full_ds.groupby(['galaxy'])[column_name].shift(2)
-    full_ds[column_name + '_lag_3'] = full_ds.groupby(['galaxy'])[column_name].shift(3)
+    # full_ds[column_name + '_lag_3'] = full_ds.groupby(['galaxy'])[column_name].shift(3)
     # full_ds[column_name + '_lag_4'] = full_ds.groupby(['galaxy'])[column_name].shift(4)
+    # full_ds[column_name + '_lag_5'] = full_ds.groupby(['galaxy'])[column_name].shift(5)
 
 
 

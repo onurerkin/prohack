@@ -18,6 +18,5 @@ cvxopt
 jupyter_contrib_nbextensions
 sklearn-pandas
 keras
-keras_lr_finder
 h2o
 optuna
