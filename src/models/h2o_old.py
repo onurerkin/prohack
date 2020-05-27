@@ -273,7 +273,7 @@ x = hf.columns
 y = 'y'
 x.remove(y)
 
-run_secs = 600
+run_secs = 3600
 
 models_path = '/Users/onurerkinsucu/Dev/prohack/models/h2o_models'
 aml = H2OAutoML(max_runtime_secs=run_secs, stopping_metric='RMSE', sort_metric='RMSE', seed=1,
@@ -285,7 +285,7 @@ lb = aml.leaderboard
 lb.head(rows=lb.nrows)
 
 
-m = h2o.get_model(lb[2,"model_id"])
+m = h2o.get_model(lb[0,"model_id"])
 var_imp = m.varimp(use_pandas=True)
 
 
@@ -294,11 +294,12 @@ preds = aml.predict(hf_test)
 
 preds = aml.leader.predict(hf_test)
 preds = h2o.as_list(preds)
+preds=preds.rename(columns={'predict':'y_pred'})
 
 
-# X_test_pred = pd.concat([ds.X_test.reset_index(drop=True), y_pred], axis=1)
+X_test_pred = pd.concat([ds.X_test.reset_index(drop=True), preds], axis=1)
 
-# X_test_pred.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred_19_may.csv', index=False)
+X_test_pred.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred_24_may.csv', index=False)
 
 # rms = math.sqrt(mean_squared_error(ds.y_test, y_pred))
 # print(rms)
@@ -308,7 +309,7 @@ preds = h2o.as_list(preds)
 lb = h2o.automl.get_leaderboard(aml, extra_columns='ALL')
 
 saved_model = h2o.load_model(
-    '/Users/onurerkinsucu/Dev/prohack/models/h2o_models/StackedEnsemble_AllModels_AutoML_20200521_112009')
+    '/Users/onurerkinsucu/Dev/prohack/models/h2o_models_classification/GBM_5_AutoML_20200524_122821')
 #
 # preds=preds.rename(columns={'predict':'y_pred'})
 # X_test_pred = pd.concat([ds.X_test.reset_index(drop=True), preds], axis=1)

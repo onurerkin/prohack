@@ -88,7 +88,7 @@ def optimize_mckinsey(train):
     return pred_opt
 
 #import datasets and run
-test=pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred_22_may_keras.csv')
+test=pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred_24_may.csv')
 pred_opt=optimize_mckinsey(test)
 
 test['pred_opt']=pred_opt
@@ -97,7 +97,7 @@ test_submission=test_submission.rename(columns={'y_pred':'pred'})
 test_submission=test_submission.rename(columns={'pred_opt':'opt_pred'})
 test_submission=test_submission.reset_index()
 
-test_submission.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/test_submission_guardians_may_22.csv', index=False)
+test_submission.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/test_submission_guardians_may_24.csv', index=False)
 
 
 test['existence_expectancy_index'].isna().sum()

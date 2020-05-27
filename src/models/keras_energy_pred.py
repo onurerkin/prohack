@@ -161,7 +161,7 @@ features = ['existence_expectancy_index',
             'intergalactic_development_index_idi_male_rank', 'adjusted_net_savings',
             'creature_immunodeficiency_disease_prevalence_adult_percentage_ages_15-49_total',
             'private_galaxy_capital_flows_percentage_of_ggp',
-            'gender_inequality_index_gii']
+            'gender_inequality_index_gii', 'y_curve_fitted']
 
 for feature in features:
     full_ds = create_features(full_ds, feature)
@@ -200,7 +200,7 @@ train_with_pred_opt = pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/interim
 
 model = train(X_train=ds.X_train, y_train=ds.y_train, X_val=ds.X_val, y_val=ds.y_val,
               layers=[200, 200, 100], num_classes=2,
-              cate_cols=cate_cols, learning_rate=1e-5, epochs=80, batch_size=32, dropout_rate=0.25)
+              cate_cols=cate_cols, learning_rate=1e-5, epochs=150, batch_size=32, dropout_rate=0.25)
 
 test_pred = predict(model=model[1], X_test=ds.X_test, cate_cols=cate_cols)
 

@@ -1,41 +1,47 @@
-# -*- coding: utf-8 -*-
+from typing import Tuple, Union
 
-# region imports
-import math
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy.stats import norm
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_log_error
-from sklearn import preprocessing
-from sklearn.model_selection import cross_val_score, cross_val_predict
-import lightgbm
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
-from src.features.impute_columns import (impute_categorical_columns, impute_numeric_columns)
-from src.contracts.Dataset import Dataset
-from src.features.standardize import standardize
+import tensorflow as tf
+from tensorflow.keras.layers import (
+    BatchNormalization,
+    Concatenate,
+    Dense,
+    Dropout,
+    Embedding,
+    Input,
+    Reshape,
+)
+from tensorflow.keras.models import Model
+from tensorflow.keras import backend as K
 from src.features.label_encoder import MultiColumnLabelEncoder
-from sklearn.preprocessing import StandardScaler
-from src.features.feature_selection import Feature_selection
-from src.features.preprocess import preprocess_
+from src.features.preprocess import preprocess_train_with_pred_opt
 from src.features.create_features import create_features
-from src.features.preprocess_full_ds import preprocess_full_ds
+from src.features.impute_columns import (impute_categorical_columns, impute_numeric_columns)
+from src.models.dnn_classifier import train, predict
 from sklearn.metrics import mean_squared_error
+from math import sqrt
+from sklearn.metrics import accuracy_score
 
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.feature_selection import SelectFromModel
 import h2o
 from h2o.automl import H2OAutoML
-from src.features.log_transform import create_log_transform
 
-from src.models.dnn_regressor import train, predict
+ds = preprocess_train_with_pred_opt(standardize_or_not=True, impute_or_not=True)
 
-# endregion
+ds.y_train = ds.y_train[1]
+ds.y_val = ds.y_val[1]
+ds.y_test = ds.y_test[1]
 
-ds = preprocess_(standardize_or_not=True, impute_or_not=True)
+ds.y_train[ds.y_train == 100] = 1
+ds.y_train[ds.y_train != 1] = 0
+
+ds.y_val[ds.y_val == 100] = 1
+ds.y_val[ds.y_val != 1] = 0
+
+ds.y_test[ds.y_test == 100] = 1
+ds.y_test[ds.y_test != 1] = 0
+
+# region feature engineering
 
 ds.X_train['is_train'] = 1
 ds.X_val['is_train'] = 2
@@ -45,11 +51,8 @@ X_train = ds.X_train
 X_val = ds.X_val
 X_test = ds.X_test
 
-X_train['y'] = ds.y_train
-X_val['y'] = ds.y_val
-X_test['y'] = np.nan
-
-full_ds = ds.X_train.append(ds.X_val).reset_index(drop=True).append(ds.X_test).reset_index(drop=True)
+full_ds = ds.X_train.append(ds.X_val).append(ds.X_test)
+full_ds = full_ds.reset_index(drop=True)
 full_ds = full_ds.reset_index()
 full_ds = full_ds.sort_values(['galaxy', 'galactic_year'])
 
@@ -161,41 +164,18 @@ features = ['existence_expectancy_index',
             'intergalactic_development_index_idi_male_rank', 'adjusted_net_savings',
             'creature_immunodeficiency_disease_prevalence_adult_percentage_ages_15-49_total',
             'private_galaxy_capital_flows_percentage_of_ggp',
-            'gender_inequality_index_gii']
-
-log_features = ['gross_income_per_capita', 'mortality_rate_under-five_per_1000_live_births',
-                'infants_lacking_immunization_red_hot_disease_percentage_of_one-galactic_year-olds',
-                'infants_lacking_immunization_combination_vaccine_percentage_of_one-galactic_year-olds',
-                'gross_galactic_product_ggp_per_capita',
-                'gross_galactic_product_ggp_total',
-                'share_of_seats_in_senate_percentage_held_by_female',
-                'estimated_gross_galactic_income_per_capita_male',
-                'estimated_gross_galactic_income_per_capita_female',
-                'estimated_gross_galactic_income_per_capita_male',
-                'estimated_gross_galactic_income_per_capita_female',
-                'domestic_credit_provided_by_financial_sector_percentage_of_ggp']
+            'gender_inequality_index_gii', 'y_curve_fitted']
 
 for feature in features:
     full_ds = create_features(full_ds, feature)
 
-for feature in log_features:
-    full_ds = create_log_transform(full_ds, feature)
-
 full_ds = full_ds.sort_values('index')
 full_ds = full_ds.drop('index', axis=1)
 
-full_ds = full_ds.drop(['y'], axis=1)
-
 cate_cols = ['galaxy']
-
-MultiColumnLabelEncoder(columns = cate_cols).fit(full_ds)
-full_ds = MultiColumnLabelEncoder(columns = cate_cols).transform(full_ds)
-
 
 all_cols = list(full_ds.columns)
 # all_cols.remove('galaxy')
-
-full_ds[all_cols] = full_ds[all_cols].astype(np.float32)
 
 
 X_train = full_ds[full_ds['is_train'] == 1]
@@ -205,38 +185,92 @@ X_val = full_ds[full_ds['is_train'] == 2]
 X_train = X_train.drop('is_train', axis=1)
 X_test = X_test.drop('is_train', axis=1)
 X_val = X_val.drop('is_train', axis=1)
+# endregion
+
+cate_cols = ['galaxy']
+MultiColumnLabelEncoder(columns=cate_cols).fit(X_train)
+
+X_train = MultiColumnLabelEncoder(columns=cate_cols).transform(X_train)
+X_val = MultiColumnLabelEncoder(columns=cate_cols).transform(X_val)
+X_test = MultiColumnLabelEncoder(columns=cate_cols).transform(X_test)
+
+ds.X_train = X_train.astype(np.float32)
+ds.X_val = X_val.astype(np.float32)
+ds.X_test = X_test.astype(np.float32)
+
+ds = impute_numeric_columns(ds, missing_flag=False)
+
+h2o.init()
+
+X_train['y'] = np.array(ds.y_train)
+hf = h2o.H2OFrame(X_train)
+hf['y'] = hf['y'].asfactor()
+
+hf_test = h2o.H2OFrame(ds.X_test)
+hf_val = h2o.H2OFrame(ds.X_val)
+
+x = hf.columns
+y = 'y'
+x.remove(y)
+
+run_secs = 3600
+
+models_path = '/Users/onurerkinsucu/Dev/prohack/models/h2o_models_classification'
+aml = H2OAutoML(max_runtime_secs=run_secs, stopping_metric='logloss', sort_metric='logloss', seed=1,
+                export_checkpoints_dir=models_path, nfolds=10)
+aml.train(x=x, y=y, training_frame=hf)
+
+# View the AutoML Leaderboard
+lb = aml.leaderboard
+lb.head(rows=lb.nrows)
+
+preds = aml.predict(hf_test)
+preds = h2o.as_list(preds)
+
+from sklearn.metrics import accuracy_score
+
+accuracy_score(ds.y_test, preds['predict'])
+
+train_with_pred_opt = pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/interim/train_with_pred_opt.csv')
+test_pred = np.array(preds[['p0', 'p1']])
 
 
-# y_train = ds.y_train.append(ds.y_val).reset_index(drop=True)
-# y_train = ds.y_train.reset_index(drop=True)
+def calculate_score(test_pred, y_true, X):
+    pred_df = pd.DataFrame(np.round(test_pred), columns=['prob_0', 'class'])
+    pred_df['class'] = pred_df['class'] * 100
+    pred_df['y_test'] = y_true.reset_index(drop=True) * 100
 
-ds.X_train = X_train
-ds.X_val = X_val
-ds.X_test = X_test
-# ds.y_train = y_train
+    prob_df = pd.DataFrame(test_pred, columns=['prob_0', 'prob_1'])
+    prob_df['y_test'] = y_true.reset_index(drop=True)
 
-ds = impute_numeric_columns(ds,missing_flag=False)
+    rms = sqrt(mean_squared_error(y_true * 100, prob_df['prob_1'] * 100
+                                  ))
+    print("20% of the RMSE: {}".format(rms * 0.2 / 100))
+    print("Accuracy: {}".format(accuracy_score(pred_df['y_test'], pred_df['class'])))
 
-ds.X_train = ds.X_train.astype(np.float32)
-ds.X_val = ds.X_val.astype(np.float32)
-ds.X_test = ds.X_test.astype(np.float32)
+    X['energy'] = np.array(prob_df['prob_1'] * 100)
+    print("Total Energy We Have: {}".format(50000 * len(X) / 890))
+    print("Total Enery We Used: {}".format(sum(X['energy'])))
 
+    y_with_index = y_true.reset_index()
+    X['index'] = np.array(y_with_index['index'])
+    real_indexes = list(X['index'])
+    X['real_existence_expectancy_index'] = np.array(
+        train_with_pred_opt.iloc[real_indexes]['existence_expectancy_index'])
 
-model = train(X_train=ds.X_train, y_train=np.array(ds.y_train), X_val=ds.X_val, y_val=np.array(ds.y_val), layers=[16, 32, 16], num_classes=1,
-              cate_cols=cate_cols,learning_rate=1e-4, epochs=1000,batch_size=32,dropout_rate=0.25)
-
-
-history = model[0]
-model = model[1]
-
-
-y_val_pred = predict(model, X_test=ds.X_val, cate_cols=cate_cols)
-rms = math.sqrt(mean_squared_error(ds.y_val, y_val_pred))
-
+    belows = X[X['real_existence_expectancy_index'] < 0.7]
+    print("Total Energy has to be given to below 0.7: {}".format(5000 * len(X) / 890))
+    print("Total Enery We Gave to below 0.7: {}".format(sum(belows['energy'])))
 
 
-y_pred = predict(model, X_test=ds.X_test, cate_cols=cate_cols)
-y_pred = pd.DataFrame(y_pred,columns=['y_pred'])
-X_test_pred = pd.concat([ds.X_test.reset_index(drop=True), y_pred], axis=1)
+calculate_score(test_pred, ds.y_test, ds.X_test)
 
-# X_test_pred.to_csv('/Users/onurerkinsucu/Dev/prohack/data/processed/X_test_pred_22_may_keras.csv', index=False)
+
+
+preds_val = aml.predict(hf_val)
+preds_val = h2o.as_list(preds_val)
+
+accuracy_score(ds.y_val, preds_val['predict'])
+
+val_pred = np.array(preds_val[['p0', 'p1']])
+calculate_score(val_pred, ds.y_val, ds.X_val)

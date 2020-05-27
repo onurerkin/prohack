@@ -40,6 +40,8 @@ def preprocess_(standardize_or_not=False, impute_or_not=False):
     y = train['y']
     # train = train.drop(['galactic_year', 'y'], axis=1)
     train = train.drop(['y'], axis=1)
+    X_test = X_test.drop(['y'], axis=1)
+
     train['galaxy'] = train['galaxy'].astype('category')
     X_test['galaxy'] = X_test['galaxy'].astype('category')
     # endregion
@@ -73,6 +75,14 @@ def preprocess_train_with_pred_opt(standardize_or_not=False, impute_or_not=False
 
     train_with_pred_opt['below_0_7'] = 0
     train_with_pred_opt.loc[train_with_pred_opt['existence_expectancy_index'] < 0.7, 'below_0_7'] = 1
+
+
+    full_dataset_curve_fitted = pd.read_csv(
+        '/Users/onurerkinsucu/Dev/prohack/data/interim/full_dataset_curve_fitted.csv')
+
+    train = full_dataset_curve_fitted.loc[full_dataset_curve_fitted['is_train'] == 1].reset_index(drop=True)
+    train_with_pred_opt['y_curve_fitted'] = np.array(train['y_curve_fitted'])
+
     # y = train_with_pred_opt['y']
     # pred_opt = train_with_pred_opt['pred_opt']
     # train_with_pred_opt = train_with_pred_opt.drop(['y', 'pred_opt'], axis=1)
@@ -119,6 +129,26 @@ def preprocess_train_with_pred_opt(standardize_or_not=False, impute_or_not=False
 
 
 def preprocess_train_with_pred_opt_prod(standardize_or_not=False, impute_or_not=False):
+
+
+    train_with_pred_opt = pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/interim/train_with_pred_opt.csv')
+    leaking_cols = ['exist_exp_index_binary',
+                    'Potential for increase in the Index',
+                    'Likely increase in the Index Coefficient']
+    train_with_pred_opt = train_with_pred_opt.drop(leaking_cols, axis=1)
+
+    train_with_pred_opt['below_0_7'] = 0
+    train_with_pred_opt.loc[train_with_pred_opt['existence_expectancy_index'] < 0.7, 'below_0_7'] = 1
+
+
+    full_dataset_curve_fitted = pd.read_csv(
+        '/Users/onurerkinsucu/Dev/prohack/data/interim/full_dataset_curve_fitted.csv')
+
+    train = full_dataset_curve_fitted.loc[full_dataset_curve_fitted['is_train'] == 1].reset_index(drop=True)
+    train_with_pred_opt['y_curve_fitted'] = np.array(train['y_curve_fitted'])
+
+
+
     # Read the data
     train_with_pred_opt = pd.read_csv('/Users/onurerkinsucu/Dev/prohack/data/interim/train_with_pred_opt.csv')
     leaking_cols = ['exist_exp_index_binary',
@@ -128,8 +158,21 @@ def preprocess_train_with_pred_opt_prod(standardize_or_not=False, impute_or_not=
     train_with_pred_opt['below_0_7'] = 0
     train_with_pred_opt.loc[train_with_pred_opt['existence_expectancy_index'] < 0.7, 'below_0_7'] = 1
 
+    full_dataset_curve_fitted = pd.read_csv(
+        '/Users/onurerkinsucu/Dev/prohack/data/interim/full_dataset_curve_fitted.csv')
+
+    train = full_dataset_curve_fitted.loc[full_dataset_curve_fitted['is_train'] == 1].reset_index(drop=True)
+    train_with_pred_opt['y_curve_fitted'] = np.array(train['y_curve_fitted'])
+
+
+
+
     X_test = pd.read_csv('data/processed/test_column_names_fixed.csv')
     X_test.loc[X_test['existence_expectancy_index'] < 0.7, 'below_0_7'] = 1
+
+
+    test = full_dataset_curve_fitted.loc[full_dataset_curve_fitted['is_train'] == 0].reset_index(drop=True)
+    X_test['y_curve_fitted'] = np.array(test['y_curve_fitted'])
 
     # y = train_with_pred_opt['y']
     # pred_opt = train_with_pred_opt['pred_opt']
